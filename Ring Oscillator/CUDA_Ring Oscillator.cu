@@ -64,7 +64,7 @@ __device__ float nMOS_didbydvds(float Vs, float Vg, float Vd, float V_T, float K
 		go_n = 0;
 	}
 	else if (Vds < Vgs + V_T) {     //linear
-		go_n = K * (Vgs - V_T) * (1 + lambda * (Vds));
+		go_n=K*(Vgs-V_T-Vds);
 	}
 	else {              //saturation
 		go_n = K / 2 * lambda * (Vgs - V_T) * (Vgs - V_T);
