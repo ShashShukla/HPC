@@ -42,6 +42,7 @@ unsigned int *Ad, *xd;
 //Calculates the xor of the 32 bits of an integer
 __device__ unsigned int xorBits(unsigned int x) {
 	unsigned int temp = 0;
+#pragma unroll
 	for (int i = 0; i < 32; i++) {
 		temp = temp + (x >> i);
 	}
@@ -64,6 +65,7 @@ __global__ void kernel(unsigned int *Ad, unsigned int *xd) {
 	if (ty == 0)
 		c[tx] = 0;
 
+#pragma unroll
 	for (int i = 0; i < (N + 31) / 32; i++) { //Traverse the entire width of the array A (along the column)
 
 		if ((i * 32 + tx) < N && (by * 32 + ty) < n) //Padding
@@ -90,6 +92,7 @@ __global__ void kernel(unsigned int *Ad, unsigned int *xd) {
 	if (tx == 0 && ty == 0) { //Find the resultant vector from each block
 		unsigned int temp = 0;
 		temp = c[31];
+#pragma unroll
 		for (int i = 30; i >= 0; i--) {
 			temp = temp << 1;
 			temp = temp + c[i];
@@ -147,8 +150,24 @@ cudaError_t launchKernel() {
 		goto Error;
 	}
 
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+
+	cudaEventRecord(start, 0);
 	//Launch kernel
 	kernel << < numBlocks, threadsPerBlock >> > (Ad, xd);
+
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+
+	cout << "Kernel Execution time(ms) = " << milliseconds << endl;
+
 
 	// Check for any errors launching the kernel
 	cudaStatus = cudaGetLastError();
